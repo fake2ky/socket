@@ -7,9 +7,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.handler.timeout.WriteTimeoutHandler;
-import io.netty.util.concurrent.CompleteFuture;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -19,9 +17,12 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 @Component
+@RequiredArgsConstructor
 public class NettyTcpServer implements ApplicationRunner {
 
     private final Integer PORT = 60000;
+
+    private final NettyTcpServerHandler nettyTcpServerHandler;
 
     @SneakyThrows
     public void start(int port) {
@@ -35,7 +36,7 @@ public class NettyTcpServer implements ApplicationRunner {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) {
                             socketChannel.pipeline().addLast(
-                                    new NettyTcpServerHandler()
+                                    nettyTcpServerHandler
                             );
                         }
                     });

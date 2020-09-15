@@ -3,8 +3,10 @@ package com.oxygen.socket.netty;
 import com.oxygen.socket.constant.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.springframework.stereotype.Component;
 
 /**
  * 数据帧传输格式
@@ -12,6 +14,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  * CHK = 0x00 ^ 0x0A ^ 0x43 ^ 0x01 ^ 0x25 = 0x6D
  * 心跳 a55a001001414b50000000001xx0d0a
  */
+@Component
+@ChannelHandler.Sharable
 public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
 
     private final String FRAME_HEAD = "a55a";
