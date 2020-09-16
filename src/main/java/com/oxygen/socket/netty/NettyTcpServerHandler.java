@@ -22,10 +22,9 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
 
     private final String FRAME_HEAD = "a55a";
 
-    private final int OK = 1;
+//    private final int OK = 1;
 //    @Autowired
 //    private BdmCabinetHeartbeatDao bdmCabinetHeartbeatDao;
-
 //    private final ConcurrentHashMap<String, ChannelHandlerContext> server = new ConcurrentHashMap<>();
 
     @Override
@@ -45,33 +44,31 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
         switch (frameType) {
             case FrameType.RECEIVED_HEART:
                 receivedHeart(ctx, byteBuf);
+                break;
             case FrameType.SEND_CLOSE_LOCK_ORDER:
-
+                sendLockStatusOrder(ctx, byteBuf);
         }
-
     }
 
 
-    //解析心跳
+    //收到心跳
     private void receivedHeart(ChannelHandlerContext ctx, ByteBuf byteBuf) {
         //获取客户端的IP和端口
         InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
         String clientIP = insocket.getAddress().getHostAddress();
-        String code ;
-
-        String frameType = ByteBufUtil.hexDump(byteBuf, 4, 1);
-        switch (frameType) {
-            case FrameType.RECEIVED_HEART:
-                code = ByteBufUtil.hexDump(byteBuf, 5, 8).toUpperCase();
-                NettyChannelMap.add(code, ctx);
-                //回应客户端
-                byteBuf.setByte(4, 2);
-                ctx.writeAndFlush(byteBuf);
-                break;
-        }
-        // TODO: 需要封装
-        // ctx.writeAndFlush(Unpooled.copiedBuffer("Netty received", Charset.defaultCharset()));
+        String code = ByteBufUtil.hexDump(byteBuf, 5, 8).toUpperCase();
+        NettyChannelMap.add(code, ctx);
+        //回应客户端
+        byteBuf.setByte(4, FrameType.SEND_HEART.hashCode());
+        ctx.writeAndFlush(byteBuf);
     }
 
-  
+
+    //服务器向柜子发送的锁状态指令
+    private void sendLockStatusOrder(ChannelHandlerContext ctx, ByteBuf byteBuf) {
+        //回应客户端
+        byteBuf.setByte(4, FrameType.SELECT_LOCK_STATUS.hashCode());
+        ctx.writeAndFlush(byteBuf);
+
+    }
 }
