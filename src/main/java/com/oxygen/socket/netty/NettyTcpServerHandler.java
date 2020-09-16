@@ -29,6 +29,17 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
         parse(ctx, msg);
     }
 
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        // ctx.channel().remoteAddress()
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        server.values().removeIf(x -> x.equals(ctx));
+        ctx.close();
+    }
+
     private void parse(ChannelHandlerContext ctx, Object msg) {
         ByteBuf byteBuf = (ByteBuf) msg;
         if (!FRAME_HEAD.equals(ByteBufUtil.hexDump(byteBuf, 0, 2))) {
@@ -47,20 +58,13 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
         // ctx.writeAndFlush(Unpooled.copiedBuffer("Netty received", Charset.defaultCharset()));
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        server.values().removeIf(x -> x.equals(ctx));
-        ctx.close();
-    }
-
     /**
      * 文档规则固定的获取唯一标识
      * @param byteBuf
      * @return
      */
     private String getId(ByteBuf byteBuf) {
-        String length = ByteBufUtil.hexDump(byteBuf, 2, 1);
-        int start = 6, end = Byte.parseByte(length) * 0xff;;
+        int start = 5, end = byteBuf.getByte(3) - 8;
         return ByteBufUtil.hexDump(byteBuf, start, end);
     }
 }
