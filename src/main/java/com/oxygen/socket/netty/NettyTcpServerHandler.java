@@ -47,6 +47,7 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
                 break;
             case FrameType.SEND_CLOSE_LOCK_ORDER:
                 sendLockStatusOrder(ctx, byteBuf);
+                break;
         }
     }
 
