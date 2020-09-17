@@ -3,11 +3,13 @@ package com.oxygen.socket.netty;
 import com.oxygen.socket.constant.FrameType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -45,11 +47,11 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
         if (!FRAME_HEAD.equals(ByteBufUtil.hexDump(byteBuf, 0, 2))) {
             return;
         }
-        String id = getId(byteBuf);
+        String deviceId = getDeviceId(byteBuf);
         String frameType = ByteBufUtil.hexDump(byteBuf, 4, 1);
         switch (frameType) {
             case FrameType.RECEIVED_HEART:
-                server.putIfAbsent(id, ctx);
+                server.put(deviceId, ctx);
                 byteBuf.setByte(4, 2);
                 ctx.writeAndFlush(byteBuf);
                 break;
@@ -63,8 +65,43 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
      * @param byteBuf
      * @return
      */
-    private String getId(ByteBuf byteBuf) {
+    private String getDeviceId(ByteBuf byteBuf) {
         int start = 5, end = byteBuf.getByte(3) - 8;
         return ByteBufUtil.hexDump(byteBuf, start, end);
     }
+
+    /**
+     * 计算校验码
+     * @param bytes
+     * @return
+     */
+    private byte getXor(byte[] bytes){
+        byte temp = 0;
+        for (int i = 1; i < bytes.length; i++) {
+            temp ^= bytes[i];
+        }
+        return temp;
+    }
+
+    /**
+     * 向服务器发送开锁
+     * @param deviceId hexString
+     * @param userId hexString
+     */
+    public void unlock(String deviceId, String userId) {
+        ByteBuf buffer = Unpooled.buffer();
+        byte[] deviceIdBytes = ByteBufUtil.decodeHexDump(deviceId);
+        byte[] userIdBytes = ByteBufUtil.decodeHexDump(userId);
+        int length = 8 + deviceIdBytes.length + userIdBytes.length;
+        byte[] bytes = {(byte) 0xa5, 0x5a, 0x00, (byte) length, 0x06};
+        buffer.writeBytes(bytes);
+        buffer.writeBytes(deviceIdBytes);
+        buffer.writeBytes(userIdBytes);
+        byte xor = getXor(buffer.copy(2, buffer.capacity()).array());
+        buffer.writeBytes(new byte[]{xor, 0x0d, 0x0a});
+        Optional.of(server.get(deviceId)).ifPresent(ctx -> {
+            ctx.writeAndFlush(buffer);
+        });
+    }
+
 }
