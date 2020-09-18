@@ -91,13 +91,13 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
     public void unlock(String deviceId, String userId) {
         ByteBuf buffer = Unpooled.buffer();
         byte[] deviceIdBytes = ByteBufUtil.decodeHexDump(deviceId);
-        byte[] userIdBytes = ByteBufUtil.decodeHexDump(userId);
+        byte[] userIdBytes = userId.getBytes();
         int length = 8 + deviceIdBytes.length + userIdBytes.length;
         byte[] bytes = {(byte) 0xa5, 0x5a, 0x00, (byte) length, 0x06};
         buffer.writeBytes(bytes);
         buffer.writeBytes(deviceIdBytes);
         buffer.writeBytes(userIdBytes);
-        byte xor = getXor(buffer.copy(2, buffer.capacity()).array());
+        byte xor = getXor(buffer.copy(2, buffer.writerIndex()).array());
         buffer.writeBytes(new byte[]{xor, 0x0d, 0x0a});
         Optional.of(server.get(deviceId)).ifPresent(ctx -> {
             ctx.writeAndFlush(buffer);
