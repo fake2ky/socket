@@ -12,5 +12,5 @@ public interface FrameType {
      */
     String SEND_HEART = "02";
 
-
+    String RECEIVED_UNLOCK = "06";
 }

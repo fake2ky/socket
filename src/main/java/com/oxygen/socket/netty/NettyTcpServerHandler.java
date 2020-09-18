@@ -55,6 +55,10 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
                 byteBuf.setByte(4, 2);
                 ctx.writeAndFlush(byteBuf);
                 break;
+            case FrameType.RECEIVED_UNLOCK:
+                // TODO:收到开锁回应
+                System.out.println("收到开锁回应");
+                break;
         }
         // TODO: 需要封装
         // ctx.writeAndFlush(Unpooled.copiedBuffer("Netty received", Charset.defaultCharset()));
@@ -93,7 +97,7 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
         byte[] deviceIdBytes = ByteBufUtil.decodeHexDump(deviceId);
         byte[] userIdBytes = userId.getBytes();
         int length = 8 + deviceIdBytes.length + userIdBytes.length;
-        byte[] bytes = {(byte) 0xa5, 0x5a, 0x00, (byte) length, 0x06};
+        byte[] bytes = {(byte) 0xa5, 0x5a, 0x00, (byte) length, 0x05};
         buffer.writeBytes(bytes);
         buffer.writeBytes(deviceIdBytes);
         buffer.writeBytes(userIdBytes);
