@@ -7,6 +7,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * CHK = 0x00 ^ 0x0A ^ 0x43 ^ 0x01 ^ 0x25 = 0x6D
  * 心跳 a55a001001414b50000000001xx0d0a
  */
+@Slf4j
 @Component
 @ChannelHandler.Sharable
 public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
@@ -47,17 +49,15 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
         if (!FRAME_HEAD.equals(ByteBufUtil.hexDump(byteBuf, 0, 2))) {
             return;
         }
-        String deviceId = getDeviceId(byteBuf);
         String frameType = ByteBufUtil.hexDump(byteBuf, 4, 1);
         switch (frameType) {
             case FrameType.RECEIVED_HEART:
-                server.put(deviceId, ctx);
+                server.put(getDeviceId(byteBuf), ctx);
                 byteBuf.setByte(4, 2);
                 ctx.writeAndFlush(byteBuf);
                 break;
             case FrameType.RECEIVED_UNLOCK:
-                // TODO:收到开锁回应
-                System.out.println("收到开锁回应");
+                log.info("收到开锁回应设备：{}", getDeviceId(byteBuf));
                 break;
         }
         // TODO: 需要封装
@@ -94,6 +94,7 @@ public class NettyTcpServerHandler extends ChannelInboundHandlerAdapter {
      */
     public void unlock(String deviceId, String userId) {
         ByteBuf buffer = Unpooled.buffer();
+        deviceId = deviceId.toLowerCase();
         byte[] deviceIdBytes = ByteBufUtil.decodeHexDump(deviceId);
         byte[] userIdBytes = userId.getBytes();
         int length = 8 + deviceIdBytes.length + userIdBytes.length;
